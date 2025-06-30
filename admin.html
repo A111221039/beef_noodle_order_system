@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>訂單後台</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f9f9f9;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #4CAF50;
+      color: white;
+    }
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+    .items {
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>訂單後台管理</h1>
+  <table id="orderTable">
+    <thead>
+      <tr>
+        <th>訂單編號</th>
+        <th>訂單內容</th>
+        <th>總價 (元)</th>
+        <th>建立時間</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    fetch('http://localhost:3000/orders')
+      .then(res => res.json())
+      .then(data => {
+        const tbody = document.querySelector("#orderTable tbody");
+        data.forEach(order => {
+          const tr = document.createElement("tr");
+          const items = JSON.parse(order.items)
+            .map(i => `${i.text} x${i.quantity}`)
+            .join('\n');
+          tr.innerHTML = `
+            <td>${order.id}</td>
+            <td class="items">${items}</td>
+            <td>${order.total_price}</td>
+            <td>${new Date(order.created_at).toLocaleString()}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      })
+      .catch(err => {
+        console.error("載入訂單失敗：", err);
+        alert("無法載入訂單資料！");
+      });
+  </script>
+</body>
+</html>

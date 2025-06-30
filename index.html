@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>牛肉麵點餐系統（分類+客製化）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background: #f7f7f7;
+      margin: 0;
+      padding: 10px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      max-width: 900px;
+      margin: auto;
+    }
+    .menu,
+    .preview {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .menu h2,
+    .preview h2 {
+      border-bottom: 2px solid #eee;
+      padding-bottom: 8px;
+      margin-bottom: 15px;
+      color: #555;
+      font-size: 20px;
+    }
+    .menu h3 {
+      color: #777;
+      margin-top: 15px;
+      margin-bottom: 8px;
+      font-weight: 900;
+      font-size: 18px;
+    }
+    .item {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 10px;
+      background: #fafafa;
+      padding: 8px;
+      border-radius: 8px;
+    }
+    .quantity-control {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 5px;
+    }
+    .quantity-control input {
+      width: 40px;
+      text-align: center;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 5px;
+    }
+    .item button {
+      margin-top: 8px;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 5px;
+      background: #66b;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button.submit-btn {
+      width: 100%;
+      padding: 15px;
+      background-color: #ff6600;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: background-color 0.3s;
+    }
+    button.submit-btn:hover {
+      background-color: #e65c00;
+    }
+    .customization select {
+      margin-bottom: 5px;
+      padding: 6px;
+      border-radius: 5px;
+      border: 1px solid #bbb;
+      background-color: white;
+      font-size: 14px;
+    }
+    .preview ul {
+      list-style: none;
+      padding: 0;
+    }
+    .preview li {
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-size: 16px;
+    }
+    .preview li:hover {
+      background: #ffe6e6;
+    }
+    #totalPrice {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+    }
+    @media (min-width: 768px) {
+      .container {
+        flex-direction: row;
+      }
+      .menu,
+      .preview {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>簡單點</h1>
+  <div class="container">
+    <div class="menu" id="orderForm">
+      <h2>吃得飽家常牛肉麵</h2>
+      <p style="font-size: 14px;">(02)8931-3318 (每周一公休)</p>
+      <div id="menuItems"></div>
+      <button class="submit-btn" id="submitOrder">送出訂單</button>
+    </div>
+
+    <div class="preview">
+      <h2>已選擇品項（點擊刪除）</h2>
+      <ul id="selectedItems"></ul>
+      <h3 id="totalPrice">總價：0 元</h3>
+    </div>
+  </div>
+
+  <script>
+    const menuItemsDiv = document.getElementById("menuItems");
+    const selectedItems = document.getElementById("selectedItems");
+    const totalPrice = document.getElementById("totalPrice");
+
+    let orderList = [];
+
+    const menuData = {
+      麵類: [
+        { name: "牛肉麵", price: 140 },
+        { name: "牛肉湯麵", price: 110 },
+        { name: "榨菜牛肉麵", price: 120 },
+        { name: "餛飩麵", price: 90 },
+        { name: "酸辣麵", price: 90 },
+        { name: "榨醬麵", price: 80 },
+        { name: "肉燥乾麵", price: 80 },
+      ],
+      餃類: [
+        { name: "水餃（10顆）", price: 60 },
+        { name: "牛肉湯餃", price: 110 },
+        { name: "酸辣湯餃", price: 100 },
+      ],
+      湯品: [
+        { name: "牛肉湯(6塊肉)", price: 90 },
+        { name: "酸辣湯", price: 90 },
+        { name: "餛飩湯", price: 90 },
+        { name: "牛肉清湯", price: 90 },
+      ],
+    };
+
+    for (const category in menuData) {
+      const catTitle = document.createElement("h3");
+      catTitle.textContent = category;
+      if (category === "麵類") {
+        catTitle.innerHTML += ' <span style="font-size:12px;color:#999;">（大碗加10元）</span>';
+      }
+      menuItemsDiv.appendChild(catTitle);
+
+      menuData[category].forEach((item) => {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <strong>${item.name} - ${item.price}元</strong>
+          ${category === "麵類" ? `
+            <label>麵條粗細：
+              <select class="noodleType">
+                <option value="細麵">細麵</option>
+                <option value="粗麵">粗麵</option>
+              </select>
+            </label>
+            <label>碗型：
+              <select class="size">
+                <option value="小碗">小碗</option>
+                <option value="大碗">大碗（+10元）</option>
+              </select>
+            </label>
+            <label>辣度：
+              <select class="spicy">
+                <option value="不辣">不辣</option>
+                <option value="微辣">微辣</option>
+                <option value="中辣">中辣</option>
+                <option value="大辣">大辣</option>
+              </select>
+            </label>
+          ` : ''}
+          <label>數量：
+            <input type="number" min="1" value="1" class="qtyInput">
+          </label>
+          <button class="addBtn">加入餐點</button>
+        `;
+        menuItemsDiv.appendChild(div);
+
+        const addBtn = div.querySelector(".addBtn");
+        addBtn.addEventListener("click", () => {
+          const qty = parseInt(div.querySelector(".qtyInput").value);
+          if (qty <= 0) return;
+
+          let extraPrice = 0;
+          let customizationText = '';
+          let customization = {};
+
+          if (category === "麵類") {
+            const noodle = div.querySelector(".noodleType").value;
+            const size = div.querySelector(".size").value;
+            const spicy = div.querySelector(".spicy").value;
+            if (size.includes("大碗")) extraPrice = 10;
+
+            customizationText = `（${noodle}｜${size}｜${spicy}）`;
+            customization = { 麵條: noodle, 碗型: size, 辣度: spicy };
+          }
+
+          const itemTotal = (item.price + extraPrice) * qty;
+          const orderItem = {
+            name: item.name,
+            price: item.price + extraPrice,
+            quantity: qty,
+            customization,
+            text: `${item.name}${customizationText} x ${qty} = ${itemTotal} 元`,
+          };
+
+          orderList.push(orderItem);
+          renderCart();
+        });
+      });
+    }
+
+    function renderCart() {
+      selectedItems.innerHTML = '';
+      let total = 0;
+      orderList.forEach((item, idx) => {
+        const li = document.createElement("li");
+        li.textContent = item.text;
+        li.addEventListener("click", () => {
+          orderList.splice(idx, 1);
+          renderCart();
+        });
+        selectedItems.appendChild(li);
+        total += item.price * item.quantity;
+      });
+      totalPrice.textContent = `總價：${total} 元`;
+    }
+
+document.getElementById("submitOrder").addEventListener("click", () => {
+  if (orderList.length === 0) {
+    alert("請先加入至少一項餐點！");
+    return;
+  }
+
+  const total = orderList.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const confirmText = orderList.map(i => i.text).join('\n') + `\n\n總價：${total} 元`;
+
+  if (confirm("確認送出以下訂單？\n\n" + confirmText)) {
+    fetch('http://localhost:3000/order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        items: orderList,
+        total_price: total
+      })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('送出失敗');
+      return res.text();
+    })
+    .then(msg => {
+      alert("點餐成功！");
+      orderList = [];
+      renderCart();
+    })
+    .catch(err => {
+      console.error(err);
+      alert("送出訂單時發生錯誤，請稍後再試。");
+    });
+  }
+});
+
+  </script>
+</body>
+</html>
